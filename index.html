@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeGuard - Cyber Alarm</title>
+    <style>
+        :root {
+            --bg-color: #080a0f;
+            --card-bg: rgba(16, 22, 34, 0.85);
+            --cyan: #00f3ff;
+            --purple: #9d00ff;
+            --pink: #ff0055;
+            --text: #f0f6fc;
+            --muted: #8b949e;
+            --border: rgba(0, 243, 255, 0.25);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; padding: 15px; display: flex; justify-content: center; align-items: center; }
+
+        .app-container { width: 100%; max-width: 450px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 0 25px rgba(0, 243, 255, 0.15); overflow: hidden; }
+
+        header { padding: 18px; text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: linear-gradient(180deg, rgba(0,243,255,0.08) 0%, transparent 100%); }
+        header h1 { font-size: 1.4rem; color: var(--cyan); letter-spacing: 1px; }
+        header p { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+        .tabs { display: flex; background: rgba(0,0,0,0.4); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .tab-btn { flex: 1; padding: 12px; text-align: center; font-size: 0.85rem; font-weight: 600; color: var(--muted); cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; }
+        .tab-btn.active { color: var(--cyan); border-bottom-color: var(--cyan); background: rgba(0,243,255,0.05); }
+
+        .tab-content { display: none; padding: 18px; max-height: 420px; overflow-y: auto; }
+        .tab-content.active { display: block; }
+
+        .form-group { margin-bottom: 14px; }
+        label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; }
+        input { width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; font-size: 0.95rem; outline: none; }
+        input:focus { border-color: var(--cyan); }
+
+        .btn-add { width: 100%; padding: 12px; background: linear-gradient(135deg, var(--purple), var(--pink)); color: #fff; border: none; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; margin-top: 5px; }
+        .btn-add:active { opacity: 0.8; }
+
+        .task-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .task-card.done { border-color: rgba(0,255,100,0.3); background: rgba(0,255,100,0.02); }
+        .task-title { font-size: 0.9rem; font-weight: 600; }
+        .task-time { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+        .badge { font-size: 0.7rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; }
+        .badge.pending { background: rgba(255,170,0,0.15); color: #ffaa00; }
+        .badge.done { background: rgba(0,255,100,0.15); color: #00ff64; }
+
+        .history-item { background: rgba(0,0,0,0.25); border-left: 3px solid var(--cyan); padding: 10px; margin-bottom: 8px; border-radius: 0 6px 6px 0; font-size: 0.8rem; }
+        .history-time { color: var(--cyan); font-size: 0.7rem; margin-bottom: 2px; }
+
+        /* Modal Báo Động */
+        #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999; justify-content: center; align-items: center; padding: 20px; }
+        .modal-box { background: #0d1117; border: 2px solid var(--pink); border-radius: 16px; padding: 25px; text-align: center; max-width: 320px; width: 100%; box-shadow: 0 0 30px rgba(255,0,85,0.4); }
+        .modal-box h2 { color: var(--pink); margin-bottom: 8px; font-size: 1.2rem; }
+        .modal-box p { color: var(--muted); font-size: 0.85rem; margin-bottom: 20px; }
+        .modal-btns { display: flex; gap: 10px; }
+        .modal-btn { flex: 1; padding: 10px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; }
+        .btn-finish { background: #00ff64; color: #000; }
+        .btn-stop { background: #ff3333; color: #fff; }
+
+        .empty-text { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 15px 0; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <h1>TIMEGUARD</h1>
+            <p>Quản Lý Báo Thức Cyber</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" id="tab-btn-tasks">Tác Vụ</button>
+            <button class="tab-btn" id="tab-btn-history">Lịch Sử (<span id="hist-count">0</span>)</button>
+        </div>
+
+        <!-- TAB 1: TÁC VỤ -->
+        <div id="tab-tasks" class="tab-content active">
+            <div class="form-group">
+                <label>Tên Tác Vụ</label>
+                <input type="text" id="taskTitle" placeholder="Ví dụ: Báo thức buổi sáng...">
+            </div>
+            
+            <div class="form-group">
+                <label>Thời Gian</label>
+                <input type="datetime-local" id="taskTime">
+            </div>
+
+            <button class="btn-add" id="btnAddTask">+ Tạo Báo Thức</button>
+
+            <div style="margin-top: 18px;">
+                <label>Danh Sách Đang Theo Dõi</label>
+                <div id="taskList" style="margin-top: 8px;"></div>
+            </div>
+        </div>
+
+        <!-- TAB 2: LỊCH SỬ -->
+        <div id="tab-history" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <label style="margin:0;">Nhật Ký Kích Hoạt</label>
+                <button id="btnClearHist" style="background:none; border:none; color:var(--pink); font-size:0.75rem; cursor:pointer;">Xóa
+  
